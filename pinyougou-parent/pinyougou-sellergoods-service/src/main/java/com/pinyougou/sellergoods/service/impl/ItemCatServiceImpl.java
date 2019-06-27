@@ -22,7 +22,17 @@ public class ItemCatServiceImpl implements ItemCatService {
 
 	@Autowired
 	private TbItemCatMapper itemCatMapper;
-	
+
+	@Override
+	public List<TbItemCat> findByItemId(Long parentId) {
+
+		TbItemCatExample example =new TbItemCatExample();
+		Criteria criteria = example.createCriteria();
+		criteria.andParentIdEqualTo(parentId);
+		List<TbItemCat> tbItemCats = itemCatMapper.selectByExample(example);
+		return tbItemCats;
+	}
+
 	/**
 	 * 查询全部
 	 */

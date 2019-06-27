@@ -4,11 +4,18 @@ import com.pinyougou.pojo.TbItemCat;
 
 import entity.PageResult;
 /**
- * 服务层接口
+ * 商品分类服务层接口
  * @author Administrator
  *
  */
 public interface ItemCatService {
+
+	/**
+	 *根据parentId查询商品信息
+	 * @param parentId
+	 * @return
+	 */
+	public List<TbItemCat> findByItemId(Long parentId);
 
 	/**
 	 * 返回全部列表

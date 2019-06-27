@@ -31,19 +31,22 @@ app.controller('itemCatController' ,function($scope,$controller   ,itemCatServic
 		);				
 	}
 	
-	//保存 
+	//保存
+	$scope.parentId=0;
+
 	$scope.save=function(){				
 		var serviceObject;//服务层对象  				
 		if($scope.entity.id!=null){//如果有ID
 			serviceObject=itemCatService.update( $scope.entity ); //修改  
 		}else{
+			$scope.entity.parentId=$scope.parentId;//给当前等级的商品添加parentId
 			serviceObject=itemCatService.add( $scope.entity  );//增加 
 		}				
 		serviceObject.success(
 			function(response){
 				if(response.success){
 					//重新查询 
-		        	$scope.reloadList();//重新加载
+		        	$scope.findByParentId($scope.parentId);//重新加载
 				}else{
 					alert(response.message);
 				}
@@ -53,12 +56,12 @@ app.controller('itemCatController' ,function($scope,$controller   ,itemCatServic
 	
 	 
 	//批量删除 
-	$scope.dele=function(){			
+	$scope.dele=function(){
 		//获取选中的复选框			
 		itemCatService.dele( $scope.selectIds ).success(
 			function(response){
 				if(response.success){
-					$scope.reloadList();//刷新列表
+					$scope.findByParentId($scope.parentId);//刷新列表
 					$scope.selectIds=[];
 				}						
 			}		
@@ -76,5 +79,37 @@ app.controller('itemCatController' ,function($scope,$controller   ,itemCatServic
 			}			
 		);
 	}
-    
+    //根据parentID查询分类列表
+	$scope.findByParentId=function (parentId) {
+		$scope.parentId=parentId;//记录上级的ID
+
+		itemCatService.findByParentId(parentId).success(
+			function (response) {
+				$scope.list=response;
+			}
+		)
+	}
+
+	//面包屑导航
+	$scope.grade=1;
+	$scope.setGrade=function (value) {
+		$scope.grade = value;
+	}
+
+	$scope.selectList=function (entity_p) {
+
+		if ($scope.grade == 1) {
+			$scope.entity_1=null;
+			$scope.entity_2=null;
+		}
+		if ($scope.grade==2){
+			$scope.entity_1=entity_p;
+			$scope.entity_2=null;
+		}
+		if ($scope.grade == 3){
+			$scope.entity_2 = entity_p;
+		}
+
+		$scope.findByParentId(entity_p.id);
+	}
 });	

@@ -8,7 +8,7 @@ http://www.springframework.org/schema/security
 http://www.springframework.org/schema/security/spring-security.xsd">
 
     <!-- 以下页面不被拦截 -->
-    <http pattern="/*.html" security="none"></http>
+    <http pattern="/login.html" security="none"></http>
     <http pattern="/css/**" security="none"></http>
     <http pattern="/img/**" security="none"></http>
     <http pattern="/js/**" security="none"></http>
@@ -16,17 +16,17 @@ http://www.springframework.org/schema/security/spring-security.xsd">
 
     <!-- 页面拦截规则 --><!-- always-use-default-target 登录后总是跳转到主页面-->
     <http use-expressions="false">
-        <intercept-url pattern="/*" access="ROLE_ADMIN" />
+        <intercept-url pattern="/**" access="ROLE_ADMIN" />
         <form-login login-page="/login.html" default-target-url="/admin/index.html"
                     authentication-failure-url="/login.html" always-use-default-target="true"/>
-        <csrf disabled="true"/>
+        <csrf disabled="true"/><!--开启后携带token信息，防止跨域伪造请求-->
         <headers>
-            <frame-options policy="SAMEORIGIN"/>
+            <frame-options policy="SAMEORIGIN"/><!--使用了框架页面，需要设置框架页面的策略为SAMEORIGIN-->
         </headers>
         <!--登录退出-->
         <logout/>
     </http>
-    <!--使用了框架页面，需要设置框架页面的策略为SAMEORIGIN-->
+
 
     <!-- 认证管理器 添加角色 -->
     <authentication-manager>

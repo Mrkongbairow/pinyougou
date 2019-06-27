@@ -19,6 +19,7 @@ app.controller("baseController",function ($scope) {
     $scope.selectIds = [];//选中的id集合
     $scope.updateSelection = function ($event, id) {
         if ($event.target.checked) {//被选中，增加到数组
+
             $scope.selectIds.push(id);
         } else {
             var indexOf = $scope.selectIds.indexOf(id);//id当前位置
