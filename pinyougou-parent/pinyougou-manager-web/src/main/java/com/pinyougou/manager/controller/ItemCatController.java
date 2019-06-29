@@ -90,12 +90,7 @@ public class ItemCatController {
 	 */
 	@RequestMapping("/delete")
 	public Result delete(Long [] ids){
-		for (Long id : ids) {
-			List<TbItemCat> byItemId = itemCatService.findByItemId(id);
-			if (byItemId.size() != 0 && byItemId !=null){
-				return new Result(false,"您选择的商品分类存在子类，不能直接删除");
-			}
-		}
+
 		try {
 			itemCatService.delete(ids);
 			return new Result(true, "删除成功");
