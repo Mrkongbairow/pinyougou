@@ -109,7 +109,7 @@ app.controller('goodsController', function ($scope, $controller, goodsService, u
     }
 
     //显示二级下拉列表
-    $scope.$watch('entity.goods.category1Id',function (newValue, oldValue) {
+    $scope.$watch('entity.tbGoods.category1Id',function (newValue, oldValue) {
         itemCatService.findByParentId(newValue).success(
             function (response) {
                 $scope.itemList2 = response;
@@ -117,7 +117,7 @@ app.controller('goodsController', function ($scope, $controller, goodsService, u
         )
     })
     //显示三级下拉列表
-        $scope.$watch('entity.goods.category2Id',function (newVale, oldValue) {
+        $scope.$watch('entity.tbGoods.category2Id',function (newVale, oldValue) {
             itemCatService.findByParentId(newVale).success(
                 function (response) {
                     $scope.itemList3=response;
@@ -126,16 +126,16 @@ app.controller('goodsController', function ($scope, $controller, goodsService, u
         });
 
     //显示模板ID
-    $scope.$watch('entity.goods.category3Id',function (newValue, odlValue) {
+    $scope.$watch('entity.tbGoods.category3Id',function (newValue, odlValue) {
         itemCatService.findOne(newValue).success(
             function (response){
-                $scope.entity.goods.typeTemplateId=response.typeId;
+                $scope.entity.tbGoods.typeTemplateId=response.typeId;
             }
         )
     });
 
     //显示品牌列表，与模板id进行绑定
-    $scope.$watch('entity.goods.typeTemplateId',function (newValue, odlValue) {
+    $scope.$watch('entity.tbGoods.typeTemplateId',function (newValue, odlValue) {
         typeTemplateService.findOne(newValue).success(
             function (response) {
                 $scope.typeTemplate=response;//获取模板对象
@@ -152,22 +152,49 @@ app.controller('goodsController', function ($scope, $controller, goodsService, u
     })
 
     //添加扩展属性
-    $scope.updateSpecAttribute=function ($evnet, name, value) {
+    $scope.updateSpecAttribute=function ($event, name, value) {
         var object = $scope.findObjectByKey($scope.entity.goodsDesc.specificationItems,'attributeName',name);
         if (object != null) {
             if($event.target.checked){//选中复选框，给集合添加值
                 object.attributeValue.push(value)
             }else {//取消选择，移除值
                 object.attributeValue.splice(object.attributeValue.indexOf(value),1)
-                //如果所有取消所有
-                if(object.attributeValue.length==0){
+
+                if(object.attributeValue.length==0){//如果没有一个复选框，将集合整个删除
                     $scope.entity.goodsDesc.specificationItems.splice($scope.entity.goodsDesc.specificationItems.indexOf(object),1)
                 }
             }
         }else{
-            $scope.entity.goodsDesc.specificationItems.push({'attributeName':name,'attributeValue':value})
+            $scope.entity.goodsDesc.specificationItems.push({'attributeName':name,'attributeValue':[value]})
         }
 
     }
 
+    //创建SKU列表
+    $scope.createItemList=function () {
+        //创建初始化数组
+        $scope.entity.itemList=[ {spec:{},price:0,num:9999,status:'0',isDefault:'0'} ]
+        //desc集合,里面存储的是规格
+        var items = $scope.entity.goodsDesc.specificationItems;
+        //遍历规格数组，给初始化集合添加规格
+        for (var i = 0; i < items.length; i++) {
+
+            $scope.entity.itemList=addColumn($scope.entity.itemList,items[i].attributeName,items[i].attributeValue);
+        }
+    }
+    //添加列值，list为初始化数组
+    addColumn=function (list,columnName,columnValue) {
+        //创建新的数组
+        var newList=[];
+        for (var i = 0; i < list.length; i++) {
+            //获取原先的数组
+           var oldRow=list[i];
+            for (var j = 0; j < columnValue.length; j++) {
+               var newRow= JSON.parse(JSON.stringify(oldRow))//通过深克隆新获取一行
+                newRow.spec[columnName]=columnValue[j];//将规格属性赋值给spec集合
+               newList.push(newRow);//将新创建的行添加到数组
+            }
+        }
+        return newList;
+    }
 });
