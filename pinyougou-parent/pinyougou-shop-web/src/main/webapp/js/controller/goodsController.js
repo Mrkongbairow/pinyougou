@@ -1,5 +1,5 @@
 //控制层
-app.controller('goodsController', function ($scope, $controller, goodsService, uploadService,itemCatService,typeTemplateService) {
+app.controller('goodsController', function ($scope, $controller,$location, goodsService, uploadService,itemCatService,typeTemplateService) {
 
     $controller('baseController', {$scope: $scope});//继承
 
@@ -23,13 +23,53 @@ app.controller('goodsController', function ($scope, $controller, goodsService, u
     }
 
     //查询实体
-    $scope.findOne = function (id) {
+    $scope.findOne = function () {
+        var id = $location.search()['id'];
+        if (id == null){//如果id为空，不执行查询
+            return;
+        }
         goodsService.findOne(id).success(
             function (response) {
                 $scope.entity = response;
+                //显示商品介绍
+                editor.html($scope.entity.goodsDesc.introduction);
+                //显示商品图片
+                $scope.entity.goodsDesc.itemImages = JSON.parse($scope.entity.goodsDesc.itemImages);
+                //读取商品扩展属性
+                $scope.entity.goodsDesc.customAttributeItems = JSON.parse( $scope.entity.goodsDesc.customAttributeItems);
+                //读取商品规格属性
+                $scope.entity.goodsDesc.specificationItems = JSON.parse($scope.entity.goodsDesc.specificationItems);
+                //获取商品sku
+                for (var i = 0; i < $scope.entity.itemList.length; i++) {
+                    $scope.entity.itemList[i].spec=JSON.parse($scope.entity.itemList[i].spec);
+                }
             }
         );
     }
+
+    //保存
+    $scope.save=function(){
+       //提取文本编辑器的值
+        $scope.entity.goodsDesc.introduction = editor.html()
+        var serviceObject;//服务层对象
+        if($scope.entity.tbGoods.id!=null){//如果有 ID
+            serviceObject=goodsService.update( $scope.entity ); //修改
+        }else{
+            serviceObject=goodsService.add( $scope.entity );//增加
+        }
+        serviceObject.success(
+            function(response){
+                if(response.success){
+                    alert('修改成功！');
+                    location.href="goods.html";
+                }else{
+                    alert(response.message);
+                }
+            }
+        );
+    }
+
+
 
     //保存
     $scope.add = function () {
@@ -140,7 +180,9 @@ app.controller('goodsController', function ($scope, $controller, goodsService, u
             function (response) {
                 $scope.typeTemplate=response;//获取模板对象
                 $scope.typeTemplate.brandIds=JSON.parse($scope.typeTemplate.brandIds)//将字符串转化为json对象
-               $scope.entity.goodsDesc.customAttributeItems= JSON.parse($scope.typeTemplate.customAttributeItems)
+                if ($location.search()['id'] == null){
+                    $scope.entity.goodsDesc.customAttributeItems= JSON.parse($scope.typeTemplate.customAttributeItems)
+                }
             }
         );
         //查找规格属性,根据模板id查询
@@ -197,4 +239,47 @@ app.controller('goodsController', function ($scope, $controller, goodsService, u
         }
         return newList;
     }
+    $scope.statusList=["未申请","申请中","审核通过","已驳回"]
+    //显示商品分类信息
+    $scope.showCatList=[];
+    $scope.itemCatList=function () {
+        itemCatService.findAll().success(
+            function (response) {
+                for (var i = 0; i < response.length; i++) {
+                    $scope.showCatList[response[i].id]=response[i].name;
+                }
+            }
+        )
+    }
+    //显示CheckBox选中数据
+    $scope.checkAttributeValue=function (name,optionName) {
+        var items = $scope.entity.goodsDesc.specificationItems;
+
+        var objectByKey = $scope.findObjectByKey(items,'attributeName',name);
+        if (objectByKey == null) {
+            return false;
+        }else {
+            if (objectByKey.attributeValue.indexOf(optionName)>=0){
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    //设置是否下架
+    $scope.isMarket=["上架","已下架","已上架"];
+    $scope.updateMarket=function (status) {
+        goodsService.updateMarket($scope.selectIds,status).success(
+            function (response) {
+                if (response.success) {
+                    $scope.reloadList();
+                    $scope.selectIds=[];
+                }else {
+                    alert(response.message)
+                }
+            }
+        )
+    }
+
 });

@@ -17,6 +17,7 @@ import com.pinyougou.pojo.TbGoodsExample.Criteria;
 import com.pinyougou.sellergoods.service.GoodsService;
 
 import entity.PageResult;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 服务实现层
@@ -24,6 +25,7 @@ import entity.PageResult;
  *
  */
 @Service
+@Transactional
 public class GoodsServiceImpl implements GoodsService {
 
 	@Autowired
@@ -62,11 +64,15 @@ public class GoodsServiceImpl implements GoodsService {
 	@Override
 	public void add(Goods goods) {
 		goods.getTbGoods().setAuditStatus("0");//设置未申请状态
+		goods.getTbGoods().setIsMarketable("0");//设置上架状态0审核中，1下架，2上架
 		goodsMapper.insert(goods.getTbGoods());
 
 		goods.getGoodsDesc().setGoodsId(goods.getTbGoods().getId());
 		goodsDescMapper.insert(goods.getGoodsDesc());
 
+		saveItems(goods);//添加sku商品
+	}
+	private void saveItems(Goods goods){
 		if ("1".equals(goods.getTbGoods().getIsEnableSpec())){
 
 			List<TbItem> itemList = goods.getItemList();
@@ -130,8 +136,20 @@ public class GoodsServiceImpl implements GoodsService {
 	 * 修改
 	 */
 	@Override
-	public void update(TbGoods goods){
-		goodsMapper.updateByPrimaryKey(goods);
+	public void update(Goods goods){
+		goods.getTbGoods().setAuditStatus("0");//设置审核状态
+		goodsMapper.updateByPrimaryKey(goods.getTbGoods());
+		goodsDescMapper.updateByPrimaryKey(goods.getGoodsDesc());
+
+		//先删除原有数据，再添加
+		TbItemExample example = new TbItemExample();
+		TbItemExample.Criteria criteria = example.createCriteria();
+		criteria.andGoodsIdEqualTo(goods.getTbGoods().getId());
+		itemMapper.deleteByExample(example);
+
+		//添加sku商品
+		saveItems(goods);
+
 	}	
 	
 	/**
@@ -140,8 +158,19 @@ public class GoodsServiceImpl implements GoodsService {
 	 * @return
 	 */
 	@Override
-	public TbGoods findOne(Long id){
-		return goodsMapper.selectByPrimaryKey(id);
+	public Goods findOne(Long id){
+		Goods goods = new Goods();
+		goods.setTbGoods( goodsMapper.selectByPrimaryKey(id));
+		goods.setGoodsDesc(goodsDescMapper.selectByPrimaryKey(id));
+
+
+		TbItemExample example = new TbItemExample();
+		TbItemExample.Criteria criteria = example.createCriteria();
+		criteria.andGoodsIdEqualTo(id);
+		List<TbItem> tbItems = itemMapper.selectByExample(example);
+		goods.setItemList(tbItems);
+
+		return goods;
 	}
 
 	/**
@@ -150,7 +179,10 @@ public class GoodsServiceImpl implements GoodsService {
 	@Override
 	public void delete(Long[] ids) {
 		for(Long id:ids){
-			goodsMapper.deleteByPrimaryKey(id);
+			TbGoods tbGoods = goodsMapper.selectByPrimaryKey(id);
+			tbGoods.setIsDelete("1");
+
+			goodsMapper.updateByPrimaryKey(tbGoods);
 		}		
 	}
 	
@@ -161,10 +193,15 @@ public class GoodsServiceImpl implements GoodsService {
 		
 		TbGoodsExample example=new TbGoodsExample();
 		Criteria criteria = example.createCriteria();
-		
+		criteria.andIsDeleteIsNull();
+
+		//criteria.andIsMarketableNotEqualTo("1");
+			//criteria.andIsMarketableEqualTo("1");
+
 		if(goods!=null){			
-						if(goods.getSellerId()!=null && goods.getSellerId().length()>0){
-				criteria.andSellerIdLike("%"+goods.getSellerId()+"%");
+				if(goods.getSellerId()!=null && goods.getSellerId().length()>0){
+//				criteria.andSellerIdLike("%"+goods.getSellerId()+"%");
+					criteria.andSellerIdEqualTo(goods.getSellerId());
 			}
 			if(goods.getGoodsName()!=null && goods.getGoodsName().length()>0){
 				criteria.andGoodsNameLike("%"+goods.getGoodsName()+"%");
@@ -193,5 +230,25 @@ public class GoodsServiceImpl implements GoodsService {
 		Page<TbGoods> page= (Page<TbGoods>)goodsMapper.selectByExample(example);		
 		return new PageResult(page.getTotal(), page.getResult());
 	}
-	
+	@Override
+	public void updateStatus(Long[] ids,String status){
+
+		for (Long id : ids) {
+			TbGoods tbGoods = goodsMapper.selectByPrimaryKey(id);
+			tbGoods.setAuditStatus(status);
+
+			goodsMapper.updateByPrimaryKey(tbGoods);
+		}
+	}
+
+	@Override
+	public void updateMarket(Long[] ids, String status) {
+		for (Long id : ids) {
+			TbGoods tbGoods = goodsMapper.selectByPrimaryKey(id);
+			tbGoods.setIsMarketable(status);
+
+			goodsMapper.updateByPrimaryKey(tbGoods);
+		}
+	}
+
 }

@@ -71,7 +71,16 @@ public class GoodsController {
 	 * @return
 	 */
 	@RequestMapping("/update")
-	public Result update(@RequestBody TbGoods goods){
+	public Result update(@RequestBody Goods goods){
+		//判断商家修改的商品是否属于本商家
+		String sellerId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+		Goods one = goodsService.findOne(goods.getTbGoods().getId());
+
+		if ( !sellerId.equals(goods.getTbGoods().getSellerId()) || !sellerId.equals(one.getTbGoods().getSellerId())){
+			return new Result(false,"非法操作");
+		}
+
 		try {
 			goodsService.update(goods);
 			return new Result(true, "修改成功");
@@ -87,7 +96,7 @@ public class GoodsController {
 	 * @return
 	 */
 	@RequestMapping("/findOne")
-	public TbGoods findOne(Long id){
+	public Goods findOne(Long id){
 		return goodsService.findOne(id);		
 	}
 	
@@ -116,7 +125,22 @@ public class GoodsController {
 	 */
 	@RequestMapping("/search")
 	public PageResult search(@RequestBody TbGoods goods, int page, int rows  ){
+		String sellerId = SecurityContextHolder.getContext().getAuthentication().getName();
+		goods.setSellerId(sellerId);
+
 		return goodsService.findPage(goods, page, rows);		
+	}
+
+	@RequestMapping("/updateMarket")
+	public Result updateMarket(Long[] ids ,String status){
+
+		try {
+			goodsService.updateMarket(ids,status);
+			return new Result(true,"下架成功");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new Result(true,"下架失败");
+		}
 	}
 	
 }

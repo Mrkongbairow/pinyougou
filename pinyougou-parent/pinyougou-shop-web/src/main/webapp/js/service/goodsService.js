@@ -29,4 +29,9 @@ app.service('goodsService',function($http){
 	this.search=function(page,rows,searchEntity){
 		return $http.post('../goods/search.do?page='+page+"&rows="+rows, searchEntity);
 	}
+
+	//设置商品是否下架状态
+	this.updateMarket=function (ids, status) {
+		return $http.get('../goods/updateMarket.do?ids='+ids+'&status='+status);
+	}
 });
