@@ -1,5 +1,7 @@
 package com.pinyougou.content.service.impl;
 import java.util.List;
+
+import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.alibaba.dubbo.config.annotation.Service;
 import com.github.pagehelper.Page;
@@ -106,11 +108,16 @@ public class ContentServiceImpl implements ContentService {
 		return new PageResult(page.getTotal(), page.getResult());
 	}
 
+	/**
+	 * 根据分类id查找广告
+	 * @param categoryId
+	 * @return
+	 */
 	@Override
-	public List<TbContent> findByCategoryId(Long id) {
+	public List<TbContent> findByCategoryId(Long categoryId) {
 		TbContentExample example = new TbContentExample();
 		Criteria criteria = example.createCriteria();
-		criteria.andCategoryIdEqualTo(id);//根据id查找
+		criteria.andCategoryIdEqualTo(categoryId);//根据id查找
 		criteria.andStatusEqualTo("1");//只查找状态为1的
 
 		example.setOrderByClause("sort_order");//广告排序

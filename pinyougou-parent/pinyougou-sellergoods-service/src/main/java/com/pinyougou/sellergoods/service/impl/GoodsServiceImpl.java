@@ -9,6 +9,7 @@ import com.pinyougou.mapper.*;
 import com.pinyougou.pojo.*;
 import com.pinyougou.pojogroup.Goods;
 import com.pinyougou.sellergoods.service.BrandService;
+import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.alibaba.dubbo.config.annotation.Service;
 import com.github.pagehelper.Page;
@@ -250,5 +251,6 @@ public class GoodsServiceImpl implements GoodsService {
 			goodsMapper.updateByPrimaryKey(tbGoods);
 		}
 	}
+
 
 }

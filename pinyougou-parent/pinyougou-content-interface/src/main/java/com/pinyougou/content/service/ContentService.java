@@ -60,8 +60,8 @@ public interface ContentService {
 
 	/**
 	 *根据广告id查找广告
-	 * @param id
+	 * @param categoryId
 	 * @return
 	 */
-	public List<TbContent> findByCategoryId(Long id);
+	public List<TbContent> findByCategoryId(Long categoryId);
 }
