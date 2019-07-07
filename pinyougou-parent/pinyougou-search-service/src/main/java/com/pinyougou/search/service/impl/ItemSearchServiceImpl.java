@@ -9,6 +9,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.solr.core.SolrTemplate;
 import org.springframework.data.solr.core.query.*;
 import org.springframework.data.solr.core.query.result.*;
+import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,9 +30,15 @@ public class ItemSearchServiceImpl implements ItemSearchService {
         List<String> list = searchCategoryList(mapSearch);
         map.put("categoryList", list);
         //3.获取品牌和规格
-        if (list != null) {
-            map.putAll(searchBrandAndSpec(list.get(0)));
+        String category = (String) mapSearch.get("category");
+        if (!category.equals("")) {//如果分类不为空，则以当前分类查询规格和品牌
+            map.putAll(searchBrandAndSpec(category));
+        } else {//如果分类为空，则以分类集合中第一个分类查询
+            if (list != null) {
+                map.putAll(searchBrandAndSpec(list.get(0)));
+            }
         }
+
 
         return map;
     }
@@ -47,8 +54,8 @@ public class ItemSearchServiceImpl implements ItemSearchService {
 
         query.addCriteria(criteria);
         ScoredPage<TbItem> items = template.queryForPage(query, TbItem.class);*/
-        //高亮查询
-        HighlightQuery queryHighLight = new SimpleHighlightQuery();
+        //高亮查询 **********************高亮设置**********************
+        HighlightQuery query = new SimpleHighlightQuery();
         //设置高亮域
         HighlightOptions highlightOptions = new HighlightOptions().addField("item_title");
         //设置高亮前缀
@@ -56,13 +63,63 @@ public class ItemSearchServiceImpl implements ItemSearchService {
         //设置后缀高亮
         highlightOptions.setSimplePostfix("</em>");
         //设置高亮选项!!!!!
-        queryHighLight.setHighlightOptions(highlightOptions);
+        query.setHighlightOptions(highlightOptions);
         //按照关键字查询
+        //******************* 设置条件查询************************
+        //1.1设置查询条件！！！！
         Criteria criteria = new Criteria("item_keywords").is(searchMap.get("keywords"));
-        //设置查询条件！！！！
-        queryHighLight.addCriteria(criteria);
+        query.addCriteria(criteria);
+        //1.2设置分类过滤查询
+        if (!"".equals(searchMap.get("category"))) {//如果分类不等于null，则进行过滤
+            Criteria criteria1 = new Criteria("item_category").is(searchMap.get("category"));
+            FilterQuery filterQuery = new SimpleFilterQuery(criteria1);
+            query.addFilterQuery(filterQuery);
+        }
+        //1.3设置品牌过滤查询
+        if (!"".equals(searchMap.get("brand"))) {//如果品牌不等于null，则进行过滤
+            Criteria criteria1 = new Criteria("item_brand").is(searchMap.get("brand"));
+            FilterQuery filterQuery = new SimpleFilterQuery(criteria1);
+            query.addFilterQuery(filterQuery);
+        }
+        //1.4设置规格过滤查询
+        if (searchMap.get("spec") != null) {
+            Map<String, String> specMap = (Map) searchMap.get("spec");
+            for (String key : specMap.keySet()) {
+                Criteria criteria1 = new Criteria("item_spec_" + key).is(specMap.get(key));
+                FilterQuery filterQuery = new SimpleFilterQuery(criteria1);
+                query.addFilterQuery(filterQuery);
+            }
+        }
+        //1.5设置根据价格区间查找
+        if (!"".equals(searchMap.get("price"))) {
+            String priceStr = (String) searchMap.get("price");//0-500
+            String[] price = priceStr.split("-");//分割价格区间
 
-        HighlightPage<TbItem> items = template.queryForHighlightPage(queryHighLight, TbItem.class);
+            if (!"0".equals(price[0])){//查找价格需大于0
+                Criteria criteria1 = new Criteria("item_price").greaterThan(price[0]);//价格不能小于等于0
+                FilterQuery filterQuery = new SimpleFilterQuery(criteria1);
+                query.addFilterQuery(filterQuery);
+            }
+            if(!"*".equals(price[1])){//查找价格需小于选择的最大价格
+                Criteria criteria1 = new Criteria("item_price").lessThanEqual(price[1]);//价格不能大于最大价格
+                FilterQuery filterQuery = new SimpleFilterQuery(criteria1);
+                query.addFilterQuery(filterQuery);
+            }
+        }
+        //1.6分页
+        Integer pageNum = (Integer) searchMap.get("pageNum");//当前页码
+        if (pageNum == null){
+            pageNum = 1;
+        }
+        Integer pageSize = (Integer) searchMap.get("pageSize");//每页显示条数
+        if (pageSize == null){
+            pageSize = 20;
+        }
+        query.setOffset(pageNum);//设置当前页码
+        query.setRows(pageSize);//设置每页条数
+
+        //**************获取结果集********************
+        HighlightPage<TbItem> items = template.queryForHighlightPage(query, TbItem.class);
 
         List<HighlightEntry<TbItem>> highlighted = items.getHighlighted();
         for (HighlightEntry<TbItem> hle : highlighted) {//获取高亮入口集合
@@ -86,6 +143,9 @@ public class ItemSearchServiceImpl implements ItemSearchService {
             }*/
         }
         map.put("rows", items.getContent());
+        map.put("totalPages",items.getTotalPages());//添加总页数
+        map.put("total",items.getTotalElements());//添加总记录数
+
         return map;
     }
 
@@ -111,6 +171,7 @@ public class ItemSearchServiceImpl implements ItemSearchService {
         }
         return list;
     }
+
     @Autowired
     private RedisTemplate redisTemplate;
 
