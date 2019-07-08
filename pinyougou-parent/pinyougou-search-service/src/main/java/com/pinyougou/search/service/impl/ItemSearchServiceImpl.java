@@ -5,6 +5,7 @@ import com.pinyougou.pojo.TbItem;
 import com.pinyougou.search.service.ItemSearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.solr.core.SolrTemplate;
 import org.springframework.data.solr.core.query.*;
@@ -39,13 +40,17 @@ public class ItemSearchServiceImpl implements ItemSearchService {
             }
         }
 
-
         return map;
     }
+
 
     //主线的查询
     private Map searchMap(Map searchMap) {
         Map map = new HashMap<>();
+
+        String keywords = (String) searchMap.get("keywords");
+
+        searchMap.put("keywords",keywords.replace(" ",""));
 
          /* //添加查询条件
         Query query = new SimpleFacetQuery();
@@ -117,6 +122,23 @@ public class ItemSearchServiceImpl implements ItemSearchService {
         }
         query.setOffset(pageNum);//设置当前页码
         query.setRows(pageSize);//设置每页条数
+
+        //1.7排序
+        String sort = (String) searchMap.get("sort");
+        String sortField = (String) searchMap.get("sortField");
+        if (sort!= null && !sort.equals("")){
+            if (sort.equals("ASC")){
+                Sort asc = new Sort(Sort.Direction.ASC,"item_"+sortField);
+                query.addSort(asc);
+            }
+            if (sort.equals("DESC")){
+
+                Sort desc = new Sort(Sort.Direction.DESC,"item_"+sortField);
+                query.addSort(desc);
+            }
+
+        }
+
 
         //**************获取结果集********************
         HighlightPage<TbItem> items = template.queryForHighlightPage(query, TbItem.class);
@@ -196,5 +218,30 @@ public class ItemSearchServiceImpl implements ItemSearchService {
             map.put("specList", specList);
         }
         return map;
+    }
+
+    /**
+     * 保存更新后的商品列表
+     * @param list
+     */
+    @Override
+    public void importList(List list) {
+        template.saveBeans(list);
+        template.commit();
+    }
+
+    /**
+     * 根据商品id删除商品
+     * @param ids
+     */
+    @Override
+    public void deletById(List ids) {
+
+        Query query = new SimpleQuery("*:*");
+        Criteria criteria = new Criteria("item_goodsid").in(ids);
+        query.addCriteria(criteria);
+        template.delete(query);
+        template.commit();
+
     }
 }

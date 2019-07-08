@@ -1,7 +1,10 @@
 package com.pinyougou.manager.controller;
+import java.util.Arrays;
 import java.util.List;
 
+import com.pinyougou.pojo.TbItem;
 import com.pinyougou.pojogroup.Goods;
+import com.pinyougou.search.service.ItemSearchService;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -96,6 +99,9 @@ public class GoodsController {
 	public Result delete(Long [] ids){
 		try {
 			goodsService.delete(ids);
+			//根据商品id，删除缓存中的索引
+			searchService.deletById(Arrays.asList(ids));
+
 			return new Result(true, "删除成功"); 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -114,8 +120,8 @@ public class GoodsController {
 	public PageResult search(@RequestBody TbGoods goods, int page, int rows  ){
 		return goodsService.findPage(goods, page, rows);		
 	}
-
-
+	@Reference
+	private ItemSearchService searchService;
 	/**
 	 * 修改审核状态
 	 * @param ids
@@ -126,6 +132,14 @@ public class GoodsController {
 	public Result updateStatus(Long[] ids,String status){
 		try {
 			goodsService.updateStatus(ids,status);
+			if ("1".equals(status)){//如果审核通过
+				List<TbItem> itemList = goodsService.findItemListByIdsAndStatus(ids, status);
+				if (itemList.size() > 0){
+					searchService.importList(itemList);
+				}else {
+					System.out.println("无有效数据");
+				}
+			}
 
 			return new Result(true,"设置成功");
 		} catch (Exception e) {

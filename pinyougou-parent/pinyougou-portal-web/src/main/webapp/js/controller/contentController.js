@@ -9,4 +9,9 @@ app.controller('contentController',function ($scope, contentService) {
             }
         )
     }
+
+    //根据关键字查找，并跳转页面
+    $scope.search=function () {
+        location.href="http://localhost:9104/search.html#?keywords="+$scope.keywords;
+    }
 })

@@ -1,4 +1,4 @@
-app.controller("searchController", function ($scope, searchService) {
+app.controller("searchController", function ($scope,$location,searchService) {
 
     //定义搜索条件结构
     $scope.searchMap = {
@@ -8,11 +8,16 @@ app.controller("searchController", function ($scope, searchService) {
         'spec': {},
         'price': '',
         'pageNum': 1,
-        'pageSize': 40
+        'pageSize': 40,
+        'sort':'',
+        'sortField':''
     }
 
     $scope.search = function () {
         $scope.searchMap.pageNum = parseInt( $scope.searchMap.pageNum);//将字符串转成数字
+
+        // $scope.searchMap.sort ='';//清空排序规则
+        // $scope.searchMap.sortField = '';//清空排序规则
 
         searchService.search($scope.searchMap).success(
             function (response) {
@@ -29,22 +34,34 @@ app.controller("searchController", function ($scope, searchService) {
         var firstPage = 1;//开始页
         var lastPage = $scope.resultMap.totalPages;//结束页码
 
+        $scope.firstPoint = true;//前面显示点
+        $scope.lastPoint = true;//后面显示点
+
         if ($scope.resultMap.totalPages > 5) {//总页数小于等于5页就直接显示
 
             if ($scope.searchMap.pageNum <= 3) {//如果当前页小于等于第三页
                 lastPage = 5;//最后的页码就等于5
+
+                $scope.firstPoint = false;//如果为前五页，则不显示前面的省略号
+
             } else if ($scope.searchMap.pageNum >= $scope.resultMap.totalPages - 2) {//如果当前页大于等于最大页数减2
                 firstPage = $scope.resultMap.totalPages - 4;//第一页就等于最大页数减4
+
+               $scope.lastPoint = false;//如果为最后五页，则不现实后面的省略号
+
             } else {
                 firstPage = $scope.searchMap.pageNum - 2;
                 lastPage = $scope.searchMap.pageNum + 2;
             }
+        }else{
+            $scope.firstPoint = false;//如果为前五页，则不显示前面的省略号
+            $scope.lastPoint = false;//如果为最后五页，则不现实后面的省略号
         }
 
         for (var i = firstPage; i <= lastPage; i++) {
             $scope.pageLabel.push(i);
         }
-    }
+    };
 
 
     //添加搜索条件
@@ -90,5 +107,29 @@ app.controller("searchController", function ($scope, searchService) {
         } else{
             return false;
         }
+    }
+
+    //根据价格排序
+    $scope.sortSearch=function (sort, sortField) {
+        $scope.searchMap.sort=sort;
+        $scope.searchMap.sortField = sortField;
+
+        $scope.search();
+    }
+    //判断搜索关键字是否为品牌
+    $scope.keywordsIsBrand=function () {
+        for (var i = 0; i < $scope.resultMap.brandList.length; i++) {
+            if ($scope.searchMap.keywords.indexOf($scope.resultMap.brandList[i].text)>=0){//如果包含品牌字段
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //获取首页跳转关键字
+    $scope.loadKeywords= function () {
+        $scope.searchMap.keywords = $location.search()['keywords'];
+        //查询
+        $scope.search();
     }
 });

@@ -93,7 +93,7 @@ app.controller('goodsController', function ($scope, $controller, $location, good
 
 
 
-    $scope.statusList = ["未申请", "申请中", "审核通过", "已驳回"]
+    $scope.statusList = ["未申请", "审核通过", "已驳回"]
     //显示商品分类信息
     $scope.showCatList = [];
     $scope.itemCatList = function () {
