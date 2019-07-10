@@ -2,6 +2,7 @@ package com.pinyougou.manager.controller;
 import java.util.Arrays;
 import java.util.List;
 
+import com.pinyougou.page.service.ItemPageService;
 import com.pinyougou.pojo.TbItem;
 import com.pinyougou.pojogroup.Goods;
 import com.pinyougou.search.service.ItemSearchService;
@@ -133,12 +134,18 @@ public class GoodsController {
 		try {
 			goodsService.updateStatus(ids,status);
 			if ("1".equals(status)){//如果审核通过
+				//******审核通过
 				List<TbItem> itemList = goodsService.findItemListByIdsAndStatus(ids, status);
 				if (itemList.size() > 0){
 					searchService.importList(itemList);
 				}else {
 					System.out.println("无有效数据");
 				}
+				//生成审核通过的静态页面
+				for (Long id : ids) {
+					genHtml(id);
+				}
+
 			}
 
 			return new Result(true,"设置成功");
@@ -146,6 +153,13 @@ public class GoodsController {
 			e.printStackTrace();
 			return new Result(false,"设置失败");
 		}
+	}
+	@Reference(timeout = 40000)
+	private ItemPageService itemPageService;
+	@RequestMapping("/genHtml")
+	public void genHtml(Long goodsId){
+
+		itemPageService.genItemHtml(goodsId);
 	}
 
 }
