@@ -2,10 +2,14 @@ package com.pinyougou.manager.controller;
 import java.util.Arrays;
 import java.util.List;
 
+import com.alibaba.fastjson.JSON;
 import com.pinyougou.page.service.ItemPageService;
 import com.pinyougou.pojo.TbItem;
 import com.pinyougou.pojogroup.Goods;
-import com.pinyougou.search.service.ItemSearchService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.MessageCreator;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +20,12 @@ import com.pinyougou.sellergoods.service.GoodsService;
 
 import entity.PageResult;
 import entity.Result;
+
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.Session;
+
 /**
  * controller
  * @author Administrator
@@ -90,18 +100,29 @@ public class GoodsController {
 	public Goods findOne(Long id){
 		return goodsService.findOne(id);		
 	}
-	
+
+
+	@Autowired
+	private Destination queueSolrDeleteDestination;
 	/**
 	 * 批量删除
 	 * @param ids
 	 * @return
 	 */
 	@RequestMapping("/delete")
-	public Result delete(Long [] ids){
+	public Result delete(final Long [] ids){
 		try {
 			goodsService.delete(ids);
 			//根据商品id，删除缓存中的索引
-			searchService.deletById(Arrays.asList(ids));
+			//searchService.deletById(Arrays.asList(ids));
+
+			//使用消息列队，从索引库中删除============================
+			jmsTemplate.send(queueSolrDeleteDestination, new MessageCreator() {
+				@Override
+				public Message createMessage(Session session) throws JMSException {
+					return session.createObjectMessage(ids);
+				}
+			});
 
 			return new Result(true, "删除成功"); 
 		} catch (Exception e) {
@@ -121,8 +142,12 @@ public class GoodsController {
 	public PageResult search(@RequestBody TbGoods goods, int page, int rows  ){
 		return goodsService.findPage(goods, page, rows);		
 	}
-	@Reference
-	private ItemSearchService searchService;
+	//@Reference
+	//private ItemSearchService searchService;
+	@Autowired
+	private JmsTemplate jmsTemplate;
+	@Autowired
+	private Destination queueSolrDestination;
 	/**
 	 * 修改审核状态
 	 * @param ids
@@ -136,15 +161,27 @@ public class GoodsController {
 			if ("1".equals(status)){//如果审核通过
 				//******审核通过
 				List<TbItem> itemList = goodsService.findItemListByIdsAndStatus(ids, status);
-				if (itemList.size() > 0){
-					searchService.importList(itemList);
-				}else {
-					System.out.println("无有效数据");
-				}
+				//if (itemList.size() > 0){
+				//	searchService.importList(itemList);
+				//}else {
+				//	System.out.println("无有效数据");
+				//}
+
+				//将集合转换为json字符串===========消息列队===========
+				final String jsonString = JSON.toJSONString(itemList);
+				jmsTemplate.send(queueSolrDestination, new MessageCreator() {
+					@Override
+					public Message createMessage(Session session) throws JMSException {
+
+						return session.createTextMessage(jsonString);
+					}
+				});
+
+
 				//生成审核通过的静态页面
-				for (Long id : ids) {
-					genHtml(id);
-				}
+				//for (Long id : ids) {
+				//	genHtml(id);
+				//}
 
 			}
 

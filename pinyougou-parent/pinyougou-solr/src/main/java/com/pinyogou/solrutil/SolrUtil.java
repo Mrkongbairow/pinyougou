@@ -36,10 +36,10 @@ public class SolrUtil {
         }
         System.out.println("==================================");
 
-        SimpleQuery query = new SimpleQuery("*:*");
-        solrTemplate.delete(query);
+       SimpleQuery query = new SimpleQuery("*:*");
+       solrTemplate.delete(query);
 
-        //solrTemplate.saveBeans(tbItems);
+        //  solrTemplate.saveBeans(tbItems);
 
         solrTemplate.commit();
     }
