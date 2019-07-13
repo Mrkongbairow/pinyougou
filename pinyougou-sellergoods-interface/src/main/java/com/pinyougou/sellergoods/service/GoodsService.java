@@ -3,7 +3,7 @@ import java.util.List;
 import com.pinyougou.pojo.TbGoods;
 
 import com.pinyougou.pojo.TbItem;
-import com.pinyougou.pojogroup.Goods;
+import com.pinyougou.pojo.group.Goods;
 import entity.PageResult;
 /**
  * 服务层接口

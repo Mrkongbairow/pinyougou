@@ -1,7 +1,7 @@
 package com.pinyougou.sellergoods.service.impl;
 import java.util.List;
 
-import com.pinyougou.pojogroup.Goods;
+import com.pinyougou.pojo.group.Goods;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.alibaba.dubbo.config.annotation.Service;

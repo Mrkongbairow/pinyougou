@@ -4,7 +4,8 @@ import java.util.Map;
 
 import com.pinyougou.pojo.TbSpecification;
 
-import com.pinyougou.pojogroup.Specification;
+import com.pinyougou.pojo.group.Specification;
+import com.pinyougou.pojo.group.Specification;
 import entity.PageResult;
 /**
  * 服务层接口

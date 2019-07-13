@@ -8,7 +8,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.pinyougou.mapper.*;
 import com.pinyougou.pojo.*;
-import com.pinyougou.pojogroup.Goods;
+import com.pinyougou.pojo.group.Goods;
 import com.pinyougou.sellergoods.service.BrandService;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,22 +65,22 @@ public class GoodsServiceImpl implements GoodsService {
 	 */
 	@Override
 	public void add(Goods goods) {
-		goods.getTbGoods().setAuditStatus("0");//设置未申请状态
-		goods.getTbGoods().setIsMarketable("0");//设置上架状态0审核中，1下架，2上架
-		goodsMapper.insert(goods.getTbGoods());
+		goods.getGoods().setAuditStatus("0");//设置未申请状态
+		goods.getGoods().setIsMarketable("0");//设置上架状态0审核中，1下架，2上架
+		goodsMapper.insert(goods.getGoods());
 
-		goods.getGoodsDesc().setGoodsId(goods.getTbGoods().getId());
+		goods.getGoodsDesc().setGoodsId(goods.getGoods().getId());
 		goodsDescMapper.insert(goods.getGoodsDesc());
 
 		saveItems(goods);//添加sku商品
 	}
 	private void saveItems(Goods goods){
-		if ("1".equals(goods.getTbGoods().getIsEnableSpec())){
+		if ("1".equals(goods.getGoods().getIsEnableSpec())){
 
 			List<TbItem> itemList = goods.getItemList();
 			for (TbItem item :itemList) {
 				//设置商品标题
-				String title = goods.getTbGoods().getGoodsName();
+				String title = goods.getGoods().getGoodsName();
 				Map<String,Object> map =  JSON.parseObject(item.getSpec());
 				for (String s : map.keySet()) {
 					title += " "+ map.get(s);
@@ -93,9 +93,9 @@ public class GoodsServiceImpl implements GoodsService {
 		}else {
 			TbItem item = new TbItem();
 			//商品名称
-			item.setTitle(goods.getTbGoods().getGoodsName());
+			item.setTitle(goods.getGoods().getGoodsName());
 			//商品价格
-			item.setPrice(goods.getTbGoods().getPrice());
+			item.setPrice(goods.getGoods().getPrice());
 			item.setStatus("1");
 			item.setIsDefault("1");
 			item.setNum(9999);
@@ -108,23 +108,23 @@ public class GoodsServiceImpl implements GoodsService {
 	private void setItems(TbItem item,Goods goods){
 
 		//设置商品spu编号
-		item.setGoodsId(goods.getTbGoods().getId());
+		item.setGoodsId(goods.getGoods().getId());
 		//设置商家编号
-		item.setSellerId(goods.getTbGoods().getSellerId());
+		item.setSellerId(goods.getGoods().getSellerId());
 		//设置商品分类编号
-		item.setCategoryid(goods.getTbGoods().getCategory3Id());
+		item.setCategoryid(goods.getGoods().getCategory3Id());
 		//设置创建日期
 		item.setCreateTime(new Date());
 		//设置修改日期
 		item.setUpdateTime(new Date());
 		//设置品牌名称
-		TbBrand tbBrand = brandMapper.selectByPrimaryKey(goods.getTbGoods().getBrandId());
+		TbBrand tbBrand = brandMapper.selectByPrimaryKey(goods.getGoods().getBrandId());
 		item.setBrand(tbBrand.getName());
 		//设置分类名称
-		TbItemCat tbItemCat = itemCatMapper.selectByPrimaryKey(goods.getTbGoods().getCategory3Id());
+		TbItemCat tbItemCat = itemCatMapper.selectByPrimaryKey(goods.getGoods().getCategory3Id());
 		item.setCategory(tbItemCat.getName());
 		//设置商家名称
-		TbSeller tbSeller = sellerMapper.selectByPrimaryKey(goods.getTbGoods().getSellerId());
+		TbSeller tbSeller = sellerMapper.selectByPrimaryKey(goods.getGoods().getSellerId());
 		item.setSeller(tbSeller.getNickName());
 		//设置图片信息
 		List<Map> maps = JSON.parseArray(goods.getGoodsDesc().getItemImages(), Map.class);
@@ -139,14 +139,14 @@ public class GoodsServiceImpl implements GoodsService {
 	 */
 	@Override
 	public void update(Goods goods){
-		goods.getTbGoods().setAuditStatus("0");//设置审核状态
-		goodsMapper.updateByPrimaryKey(goods.getTbGoods());
+		goods.getGoods().setAuditStatus("0");//设置审核状态
+		goodsMapper.updateByPrimaryKey(goods.getGoods());
 		goodsDescMapper.updateByPrimaryKey(goods.getGoodsDesc());
 
 		//先删除原有数据，再添加
 		TbItemExample example = new TbItemExample();
 		TbItemExample.Criteria criteria = example.createCriteria();
-		criteria.andGoodsIdEqualTo(goods.getTbGoods().getId());
+		criteria.andGoodsIdEqualTo(goods.getGoods().getId());
 		itemMapper.deleteByExample(example);
 
 		//添加sku商品
@@ -162,7 +162,7 @@ public class GoodsServiceImpl implements GoodsService {
 	@Override
 	public Goods findOne(Long id){
 		Goods goods = new Goods();
-		goods.setTbGoods( goodsMapper.selectByPrimaryKey(id));
+		goods.setGoods( goodsMapper.selectByPrimaryKey(id));
 		goods.setGoodsDesc(goodsDescMapper.selectByPrimaryKey(id));
 
 
