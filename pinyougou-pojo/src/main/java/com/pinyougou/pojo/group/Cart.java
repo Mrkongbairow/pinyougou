@@ -9,7 +9,7 @@ import java.util.List;
 public class Cart implements Serializable {
     private String sellerName;
     private String sellerID;
-    private List<TbOrderItem> oderItemList;
+    private List<TbOrderItem> orderItemList;
 
     public String getSellerName() {
         return sellerName;
@@ -27,11 +27,11 @@ public class Cart implements Serializable {
         this.sellerID = sellerID;
     }
 
-    public List<TbOrderItem> getOderItemList() {
-        return oderItemList;
+    public List<TbOrderItem> getOrderItemList() {
+        return orderItemList;
     }
 
-    public void setOderItemList(List<TbOrderItem> oderItemList) {
-        this.oderItemList = oderItemList;
+    public void setOrderItemList(List<TbOrderItem> oderItemList) {
+        this.orderItemList = oderItemList;
     }
 }

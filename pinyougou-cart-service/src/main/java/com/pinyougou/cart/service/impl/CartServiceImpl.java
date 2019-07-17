@@ -7,6 +7,7 @@ import com.pinyougou.pojo.TbItem;
 import com.pinyougou.pojo.TbOrderItem;
 import com.pinyougou.pojo.group.Cart;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -47,25 +48,25 @@ public class CartServiceImpl implements CartService {
             List<TbOrderItem> orderItemList = new ArrayList<>();
             orderItemList.add(orderItem);
 
-            cart.setOderItemList(orderItemList);
+            cart.setOrderItemList(orderItemList);
             //4.2将新创建的购物车对象添加到购物车列表中
             cartList.add(cart);
         }else {//5.如果购物车列表中存在该商家的购物车
             //判断该商品是否存在购物车明细列表中
-            TbOrderItem orderItem = searchOderItem(cart.getOderItemList(), itemId);
+            TbOrderItem orderItem = searchOderItem(cart.getOrderItemList(), itemId);
 
             if (orderItem == null){ //5.1如果不存在，创建购物车明细对象，并添加到商家购物车中
               orderItem =  createOrderItem(item,num);
-              cart.getOderItemList().add(orderItem);
+              cart.getOrderItemList().add(orderItem);
             }else {//5.2如果存在，在原有的数量上添加数量，并更新金额
                 orderItem.setNum(orderItem.getNum()+num);
                 orderItem.setTotalFee(new BigDecimal(orderItem.getPrice().doubleValue()*orderItem.getNum()));
                 //如果商品数量在操作后小于等于0，则移除该明细
                 if (orderItem.getNum() <= 0){
-                    cart.getOderItemList().remove(orderItem);
+                    cart.getOrderItemList().remove(orderItem);
                 }
                 //如果购物车中商品数量为0 ，则移除该商家购物车
-                if (cart.getOderItemList().size() == 0){
+                if (cart.getOrderItemList().size() == 0){
                     cartList.remove(cart);
                 }
             }
@@ -73,6 +74,45 @@ public class CartServiceImpl implements CartService {
         }
 
         return cartList;
+    }
+    @Autowired
+    private RedisTemplate redisTemplate;
+    /**
+     * 从缓存中查找购物车列表
+     * @param username
+     * @return
+     */
+    @Override
+    public List<Cart> findCartListFromRedis(String username) {
+        System.out.println("从缓存中获取购物车");
+        List<Cart> cartList = (List<Cart>) redisTemplate.boundHashOps("cartList").get(username);
+        if (cartList == null){
+            cartList = new ArrayList<>();
+        }
+        return cartList;
+    }
+
+    /**
+     * 将购物车列表存入缓存
+     * @param username
+     * @param cartList
+     */
+    @Override
+    public void saveCatListToRedis(String username, List<Cart> cartList) {
+        System.out.println("将购物车存入缓存");
+        redisTemplate.boundHashOps("cartList").put(username,cartList);
+    }
+
+    @Override
+    public List<Cart> mergeCartList(List<Cart> cartList1, List<Cart> cartList2) {
+        //不能进行简单合并
+        for (Cart cart : cartList1) {
+            for (TbOrderItem orderItem : cart.getOrderItemList()) {
+                cartList2 = addGoodsToCartList(cartList2, orderItem.getItemId(), orderItem.getNum());
+            }
+        }
+
+        return cartList2;
     }
 
     /**
@@ -92,12 +132,12 @@ public class CartServiceImpl implements CartService {
 
     /**
      * 查找购物车中是否存在该商品
-     * @param oderList
+     * @param orderList
      * @param itemId
      * @return
      */
-    private TbOrderItem searchOderItem(List<TbOrderItem> oderList,Long itemId){
-        for (TbOrderItem tbOrderItem : oderList) {
+    private TbOrderItem searchOderItem(List<TbOrderItem> orderList,Long itemId){
+        for (TbOrderItem tbOrderItem : orderList) {
             if (tbOrderItem.getItemId().longValue() == itemId.longValue()){
                 return tbOrderItem;
             }
