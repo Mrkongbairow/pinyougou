@@ -298,6 +298,9 @@
         <module>pinyougou-cart-interface</module>
 		<module>pinyougou-cart-service</module>
 		<module>pinyougou-cart-web</module>
+        <module>pinyougou-order-interface</module>
+		<module>pinyougou-orde-rservice</module>
+		<module>pinyougou-order-service</module>
 
 	</modules>
 </project>

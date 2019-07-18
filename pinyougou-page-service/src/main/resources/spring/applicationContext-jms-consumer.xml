@@ -24,7 +24,6 @@
 
 	<!-- 我的监听类 -->
 	<bean id="topicPageDeleteListener" class="com.pinyougou.page.service.impl.TopicPageDeleteListener"></bean>
-
 	<!-- 消息监听容器 -->
 	<bean class="org.springframework.jms.listener.DefaultMessageListenerContainer">
 		<property name="connectionFactory" ref="connectionFactory" />

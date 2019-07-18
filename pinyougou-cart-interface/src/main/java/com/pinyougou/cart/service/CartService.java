@@ -1,5 +1,6 @@
 package com.pinyougou.cart.service;
 
+import com.pinyougou.pojo.TbAddress;
 import com.pinyougou.pojo.group.Cart;
 
 import java.util.List;
@@ -36,4 +37,5 @@ public interface CartService {
      * @return
      */
     public List<Cart> mergeCartList(List<Cart> cartList1,List<Cart> cartList2);
+
 }

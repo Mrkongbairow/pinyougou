@@ -1,10 +1,7 @@
 package com.pinyougou.page.service.impl;
 
 
-import com.pinyougou.mapper.TbGoodsDescMapper;
-import com.pinyougou.mapper.TbGoodsMapper;
-import com.pinyougou.mapper.TbItemCatMapper;
-import com.pinyougou.mapper.TbItemMapper;
+import com.pinyougou.mapper.*;
 import com.pinyougou.page.service.ItemPageService;
 import com.pinyougou.pojo.*;
 import freemarker.template.Configuration;
@@ -101,4 +98,5 @@ public class ItemPageServiceImpl implements ItemPageService {
 
         return false;
     }
+
 }
