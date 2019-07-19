@@ -1,11 +1,14 @@
 package com.pinyougou.order.service.impl;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import com.pinyougou.mapper.TbOrderItemMapper;
+import com.pinyougou.mapper.TbPayLogMapper;
 import com.pinyougou.pojo.TbOrderItem;
+import com.pinyougou.pojo.TbPayLog;
 import com.pinyougou.pojo.group.Cart;
 import com.pinyougou.util.IdWorker;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +61,8 @@ public class OrderServiceImpl implements OrderService {
     private RedisTemplate<String, Object> redisTemplate;
     @Autowired
     private TbOrderItemMapper orderItemMapper;
-
+    @Autowired
+    private TbPayLogMapper payLogMapper;
     /**
      * 增加
      */
@@ -67,6 +71,14 @@ public class OrderServiceImpl implements OrderService {
         //获取购物车集合
         List<Cart> cartList = (List<Cart>) redisTemplate.boundHashOps("cartList").get(order.getUserId());
 
+        if (cartList == null){
+            throw new RuntimeException("购物车未添加商品");
+        }
+
+        //订单Id列表
+        List<String> orderList = new ArrayList<>();
+        //支付总金额
+        double totalMoney = 0;
         //循环获取购物车
         for (Cart cart : cartList) {
             long orderId = idWorker.nextId();
@@ -84,6 +96,7 @@ public class OrderServiceImpl implements OrderService {
             tborder.setSourceType(order.getSourceType());//订单来源
             tborder.setSellerId(cart.getSellerID());//商家 ID
 
+            orderList.add(orderId+"");//添加订单id到orderList
             //循环购物车明细
             double money = 0;
             for (TbOrderItem orderItem : cart.getOrderItemList()) {
@@ -92,10 +105,29 @@ public class OrderServiceImpl implements OrderService {
                 orderItem.setSellerId(cart.getSellerID());
                 money += orderItem.getTotalFee().doubleValue();//金额累加
                 orderItemMapper.insert(orderItem);
+
+                totalMoney+=money;//累加总金额
             }
             tborder.setPayment(new BigDecimal(money));
             orderMapper.insert(tborder);
 
+            //创建订单日志
+            if("1".equals(order.getPaymentType())){//如果是微信支付，创建日志
+
+                TbPayLog payLog = new TbPayLog();
+
+                payLog.setOutTradeNo(idWorker.nextId()+"");//支付单号
+                payLog.setCreateTime(new Date());//创建时间
+                payLog.setOrderList(orderList.toString().replace("[","").replace("]",""));//订单集合
+                payLog.setPayType("1");//支付类型，微信
+                payLog.setTotalFee((long) (totalMoney*100));
+                payLog.setTradeState("0");//支付状态
+                payLog.setUserId(order.getUserId());//用户 ID
+
+
+                payLogMapper.insert(payLog);//插入到支付日志表
+                redisTemplate.boundHashOps("payLog").put(order.getUserId(), payLog);// //放入缓存
+            }
         }
         //删除缓存中的购物物车
         redisTemplate.boundHashOps("cartList").delete(order.getUserId());
@@ -194,6 +226,35 @@ public class OrderServiceImpl implements OrderService {
 
         Page<TbOrder> page = (Page<TbOrder>) orderMapper.selectByExample(example);
         return new PageResult(page.getTotal(), page.getResult());
+    }
+    //从缓存中获取日志信息
+    @Override
+    public TbPayLog searchPayLogFromRedis(String userId) {
+
+        return (TbPayLog) redisTemplate.boundHashOps("payLog").get(userId);
+    }
+
+    @Override
+    public void updateOrderStatus(String out_trade_no, String transaction_id) {
+        //修改支付日志状态
+        TbPayLog payLog = payLogMapper.selectByPrimaryKey(out_trade_no);
+        payLog.setPayTime(new Date());
+        payLog.setTradeState("1");//已支付
+        payLog.setTransactionId(transaction_id);//交易号
+
+        payLogMapper.updateByPrimaryKey(payLog);
+        //修改关联的订单状态
+        String orderList = payLog.getOrderList();//获取订单号列表
+        String[] orders = orderList.split(",");//获取订单号数组
+        for (String order : orders) {
+            TbOrder tbOrder = orderMapper.selectByPrimaryKey(Long.parseLong(order));
+            if (tbOrder != null){
+                tbOrder.setStatus("2");//已付款
+                orderMapper.updateByPrimaryKey(tbOrder);
+            }
+        }
+        //清除缓存中的日志对象
+        redisTemplate.boundHashOps("payLog").delete(payLog.getUserId());
     }
 
 }

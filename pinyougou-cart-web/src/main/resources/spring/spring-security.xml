@@ -10,6 +10,10 @@
     <http pattern="/plugins/**" security="none"></http>
 
     <http pattern="/cart.html" security="none"></http>
+
+ <!--   <http pattern="/*.html" security="none"></http>
+    <http pattern="/pay/*.do" security="none"></http>-->
+
     <!--<http pattern="/cart/*.do" security="none"></http>-->
 
 
